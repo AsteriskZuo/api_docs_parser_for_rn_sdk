@@ -1,0 +1,19 @@
+{
+  "name": "api_docs_parser",
+  "version": "1.0.0",
+  "description": "parse and generate overview document",
+  "main": "index.js",
+  "author": "AsteriskZuo",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "prettier": {
+    "quoteProps": "consistent",
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "useTabs": false
+  }
+}
