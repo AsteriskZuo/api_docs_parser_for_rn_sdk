@@ -6,9 +6,13 @@ import readline from 'node:readline';
   // https://blog.csdn.net/weixin_45277161/article/details/116520780
 
   const init = function (output, callback) {
-    fs.open(output, fs.constants.O_RDWR | fs.constants.O_CREAT, (err, fd) => {
-      callback(err, fd);
-    });
+    fs.open(
+      output,
+      fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_TRUNC,
+      (err, fd) => {
+        callback(err, fd);
+      }
+    );
   };
 
   const uninit = function (fd) {
@@ -27,6 +31,11 @@ import readline from 'node:readline';
   const outputTitle = function (fd, title) {
     const data = `## ${title}\n`;
     fs.writeSync(fd, data);
+  };
+
+  const outputBody = function (fd, key, value) {
+    const d = `| ${key} | ${value} |\n`;
+    fs.writeSync(fd, d);
   };
 
   const outputTail = function (fd) {
@@ -48,7 +57,7 @@ import readline from 'node:readline';
     return false;
   };
 
-  const outputer = function (line, fd, pd) {
+  const parser = function (line, fd, pd) {
     matcher(line, /\/\*\*/g, (data) => {
       pd.commentLineNumber = pd.lineNumber + 1;
       // console.log(pd.commentLineNumber);
@@ -56,20 +65,28 @@ import readline from 'node:readline';
     if (pd.lineNumber === pd.commentLineNumber) {
       pd.comment = line;
     }
-    if (pd.existed === false) {
-      if (
-        matcher(line, /export class [a-z|A-Z|0-9]+ /y, (data) => {
-          const key = data.replace('export class', '').trim();
-          const value = pd.comment.trim().substring(1).trim();
-          pd.title = key;
-          pd.titleComment = value;
-          outputTitle(fd, pd.title);
-          outputHead(fd);
-        })
-      ) {
-        pd.existed = true;
-      }
-    } else {
+    if (matcher(line, /(\s\*|@link|@url|@param|@throws)/g, () => {})) {
+      return;
+    }
+    matcher(line, /export class [a-z|A-Z|0-9]+ /y, (data) => {
+      const key = data.replace('export class', '').trim();
+      const value = pd.comment.trim().substring(1).trim();
+      pd.title = key;
+      pd.titleComment = value;
+      pd.titleType = 'class';
+      outputTitle(fd, pd.title);
+      outputHead(fd);
+    });
+    matcher(line, /export interface [a-z|A-Z|0-9]+ /y, (data) => {
+      const key = data.replace('export interface', '').trim();
+      const value = pd.comment.trim().substring(1).trim();
+      pd.title = key;
+      pd.titleComment = value;
+      pd.titleType = 'interface';
+      outputTitle(fd, pd.title);
+      outputHead(fd);
+    });
+    if (pd.titleType === 'class') {
       matcher(line, /public (get|set|async) [a-z|A-Z|0-9]+\(/g, (data) => {
         let key = data
           .replace(/public (get|set|async)/g, '')
@@ -77,15 +94,21 @@ import readline from 'node:readline';
           .trim();
         const value = pd.comment.trim().substring(1).trim();
         key = `{@link ${pd.title}.${key} ${key}}`;
-        const d = `| ${key} | ${value} |\n`;
-        fs.writeSync(fd, d);
+        outputBody(fd, key, value);
+      });
+    } else if (pd.titleType === 'interface') {
+      matcher(line, /[a-z|A-Z|0-9]+\??\(/g, (data) => {
+        let key = data.replace(/\??\(/g, '').trim();
+        const value = pd.comment.trim().substring(1).trim();
+        key = `{@link ${pd.title}.${key} ${key}}`;
+        outputBody(fd, key, value);
       });
     }
   };
 
-  const parser = function (df, fd) {
+  const reader = function (df, fd) {
     const rs = fs.createReadStream(df);
-    const rl = readline.createInterface(rs);
+    const rl = readline.createInterface({ input: rs });
     const pd = {
       existed: false,
       lineNumber: 0,
@@ -93,10 +116,11 @@ import readline from 'node:readline';
       comment: '',
       title: '',
       titleComment: '',
+      titleType: 'class' | 'interface',
     };
     rl.on('line', (line) => {
       ++pd.lineNumber;
-      outputer(line, fd, pd);
+      parser(line, fd, pd);
     });
     outputTail(fd);
     // const buffer = new Uint8Array(Buffer.from('Hello Node.js'));
@@ -141,7 +165,7 @@ import readline from 'node:readline';
               } else if (stats.isFile()) {
                 console.log(`file: ${df}`);
                 if (filter(df, ['Chat']) === true) {
-                  parser(df, fd);
+                  reader(df, fd);
                 } else {
                   console.log('ignore:', df);
                 }
