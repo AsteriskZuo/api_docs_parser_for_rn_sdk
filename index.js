@@ -3,8 +3,6 @@ import path from 'node:path';
 import readline from 'node:readline';
 
 (function (params) {
-  // https://blog.csdn.net/weixin_45277161/article/details/116520780
-
   const init = function (output, callback) {
     fs.open(
       output,
@@ -114,10 +112,6 @@ import readline from 'node:readline';
   };
 
   const reader = function (df, fd) {
-    // https://nodejs.org/dist/latest-v16.x/docs/api/readline.html
-    // https://nodejs.org/dist/latest-v16.x/docs/api/stream.html
-    // https://nodejs.org/dist/latest-v16.x/docs/api/fs.html#fscreatereadstreampath-options
-    // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/RegExp
     const rs = fs.createReadStream(df, {
       flags: 'r',
       mode: fs.constants.O_RDONLY,
