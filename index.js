@@ -21,8 +21,15 @@ import readline from 'node:readline';
     }
   };
 
-  const outputHead = function (fd) {
-    const head = '| Method | Description |\n';
+  const outputHead = function (fd, type) {
+    let head = '';
+    if (type === 'class') {
+      head = '| Method | Description |\n';
+    } else if (type === 'interface') {
+      head = '| Event | Description |\n';
+    } else {
+      throw `not support this type: ${type}`;
+    }
     const divide = '| :----- | :---------- |\n';
     fs.writeSync(fd, head);
     fs.writeSync(fd, divide);
@@ -75,7 +82,7 @@ import readline from 'node:readline';
       pd.titleComment = value;
       pd.titleType = 'class';
       outputTitle(fd, pd.title);
-      outputHead(fd);
+      outputHead(fd, pd.titleType);
     });
     matcher(line, /export interface [a-z|A-Z|0-9]+ /y, (data) => {
       const key = data.replace('export interface', '').trim();
@@ -84,18 +91,23 @@ import readline from 'node:readline';
       pd.titleComment = value;
       pd.titleType = 'interface';
       outputTitle(fd, pd.title);
-      outputHead(fd);
+      outputHead(fd, pd.titleType);
     });
     if (pd.titleType === 'class') {
-      matcher(line, /public (get|set|async) [a-z|A-Z|0-9]+\(/g, (data) => {
-        let key = data
-          .replace(/public (get|set|async)/g, '')
-          .replace(/\(/g, '')
-          .trim();
-        const value = pd.comment.trim().substring(1).trim();
-        key = `{@link ${pd.title}.${key} ${key}}`;
-        outputBody(fd, key, value);
-      });
+      matcher(
+        line,
+        /public ((get|set|async|static) )?[a-z|A-Z|0-9]+\(/g,
+        (data) => {
+          let key = data
+            .replace(/(get|set|async|static)/g, '')
+            .replace(/public/g, '')
+            .replace(/\(/g, '')
+            .trim();
+          const value = pd.comment.trim().substring(1).trim();
+          key = `{@link ${pd.title}.${key} ${key}}`;
+          outputBody(fd, key, value);
+        }
+      );
     } else if (pd.titleType === 'interface') {
       matcher(line, /[a-z|A-Z|0-9]+\??\(/g, (data) => {
         let key = data.replace(/\??\(/g, '').trim();
