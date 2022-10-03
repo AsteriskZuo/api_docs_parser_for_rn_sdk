@@ -57,17 +57,12 @@ import readline from 'node:readline';
       callback(r[0]);
       return true;
     }
-    // const re = /1234/g;
-    // let r;
-    // while ((r = re.exec('123 456')))
-    //   console.log(r, r.length, r[0], 'AND re.lastIndex', re.lastIndex);
     return false;
   };
 
   const parser = function (line, fd, pd) {
     matcher(line, /\/\*\*/g, (data) => {
       pd.commentLineNumber = pd.lineNumber + 1;
-      // console.log(pd.commentLineNumber);
     });
     if (pd.lineNumber === pd.commentLineNumber) {
       pd.comment = line;
@@ -147,13 +142,9 @@ import readline from 'node:readline';
       parser(line, fd, pd);
     });
     rl.on('error', (...args) => {
-      console.log(...args);
+      console.error(...args);
     });
     outputTail(fd);
-    // const buffer = new Uint8Array(Buffer.from('Hello Node.js'));
-    // fs.write(fd, buffer, (err, written) => {
-    //   console.log(err, written);
-    // });
   };
 
   const filter = function (dir = '', keys) {
@@ -163,24 +154,19 @@ import readline from 'node:readline';
         return true;
       }
     }
-    // keys.forEach((key) => {
-    //   if (dir.includes(key)) {
-    //     return true;
-    //   }
-    // });
     return false;
   };
 
   const scanFiles = function (targetDir, fd) {
     fs.readdir(targetDir, function (err, files) {
       if (err) {
-        console.log(err);
+        console.error(err);
       } else {
         files.forEach((file) => {
           const df = path.join(targetDir, file);
           fs.stat(df, (err, stats) => {
             if (err) {
-              console.log(err);
+              console.error(err);
             } else {
               if (stats.isDirectory()) {
                 console.log(`dir: ${df}`);
@@ -208,13 +194,12 @@ import readline from 'node:readline';
   };
 
   const main = function () {
-    // const targetDir = '/Users/asterisk/Tmp/dsf';
     const targetDir = '/Users/asterisk/Codes/rn/react-native-chat-sdk/src';
     const outputDir = '/Users/asterisk/Codes/zuoyu/api_docs_parser';
     global.outputFile = path.join(outputDir, 'output.md');
     init(global.outputFile, (err, fd) => {
       if (err) {
-        console.log(err);
+        console.error(err);
       } else {
         scanFiles(targetDir, fd);
       }
