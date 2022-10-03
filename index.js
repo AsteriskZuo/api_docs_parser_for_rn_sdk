@@ -94,8 +94,8 @@ import readline from 'node:readline';
         /public ((get|set|async|static) )?[a-z|A-Z|0-9]+\(/g,
         (data) => {
           let key = data
-            .replace(/(get|set|async|static)/g, '')
-            .replace(/public/g, '')
+            .replace(/(get|set|async|static) /g, '')
+            .replace(/public /g, '')
             .replace(/\(/g, '')
             .trim();
           const value = pd.comment.trim().substring(1).trim();
