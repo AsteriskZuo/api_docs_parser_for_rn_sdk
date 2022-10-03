@@ -107,7 +107,19 @@ import readline from 'node:readline';
   };
 
   const reader = function (df, fd) {
-    const rs = fs.createReadStream(df);
+    // https://nodejs.org/dist/latest-v16.x/docs/api/readline.html
+    // https://nodejs.org/dist/latest-v16.x/docs/api/stream.html
+    // https://nodejs.org/dist/latest-v16.x/docs/api/fs.html#fscreatereadstreampath-options
+    // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/RegExp
+    const rs = fs.createReadStream(df, {
+      flags: 'r',
+      mode: fs.constants.O_RDONLY,
+      autoClose: true,
+      emitClose: true,
+      highWaterMark: 128 * 1024,
+      start: 0,
+    });
+    // const rs = fs.createReadStream(df);
     const rl = readline.createInterface({ input: rs });
     const pd = {
       existed: false,
@@ -121,6 +133,9 @@ import readline from 'node:readline';
     rl.on('line', (line) => {
       ++pd.lineNumber;
       parser(line, fd, pd);
+    });
+    rl.on('error', (...args) => {
+      console.log(...args);
     });
     outputTail(fd);
     // const buffer = new Uint8Array(Buffer.from('Hello Node.js'));
@@ -184,8 +199,8 @@ import readline from 'node:readline';
     // const targetDir = '/Users/asterisk/Tmp/dsf';
     const targetDir = '/Users/asterisk/Codes/rn/react-native-chat-sdk/src';
     const outputDir = '/Users/asterisk/Codes/zuoyu/api_docs_parser';
-    const outputFile = path.join(outputDir, 'output.md');
-    init(outputFile, (err, fd) => {
+    global.outputFile = path.join(outputDir, 'output.md');
+    init(global.outputFile, (err, fd) => {
       if (err) {
         console.log(err);
       } else {
