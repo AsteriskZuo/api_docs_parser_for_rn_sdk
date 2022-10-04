@@ -111,13 +111,16 @@ import readline from 'node:readline';
     }
   };
 
-  const reader = function (df, fd) {
+  const reader = function (df, fd, size) {
     const rs = fs.createReadStream(df, {
       flags: 'r',
       mode: fs.constants.O_RDONLY,
       autoClose: true,
       emitClose: true,
-      highWaterMark: 128 * 1024,
+      highWaterMark:
+        size >= global.cacheSize * 1024
+          ? (size / 1024 + 1) * 1024
+          : global.cacheSize * 1024,
       start: 0,
     });
     // const rs = fs.createReadStream(df);
@@ -172,7 +175,7 @@ import readline from 'node:readline';
               } else if (stats.isFile()) {
                 console.log(`file: ${df}`);
                 if (filter(df, ['Chat']) === true) {
-                  reader(df, fd);
+                  reader(df, fd, stats.size);
                 } else {
                   console.log('ignore:', df);
                 }
@@ -191,6 +194,7 @@ import readline from 'node:readline';
     const targetDir = '/Users/asterisk/Codes/rn/react-native-chat-sdk/src';
     const outputDir = '/Users/asterisk/Codes/zuoyu/api_docs_parser';
     global.outputFile = path.join(outputDir, 'output.md');
+    global.cacheSize = 32;
     init(global.outputFile, (err, fd) => {
       if (err) {
         console.error(err);
