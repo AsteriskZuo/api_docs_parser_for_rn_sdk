@@ -27,3 +27,18 @@
 ## ChatPushManager
 ## ChatUserInfoManager
 ```
+
+## 简要说明
+
+该脚本主要输出 `typedoc` 需要的首页 `markdown` 文件。
+`output.md` 输出原始加工数据。
+`output2.md` 输出二次加工数据。该数据符合 `agora` 的文档要求。
+
+最终，输出数据是列举所有 `class` 或者 `interface` 的所有方法。
+
+类似
+
+## ChatClient
+
+| Method | Description |
+| :----- | :---------- |
