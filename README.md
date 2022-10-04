@@ -12,3 +12,18 @@
 `public get ${}(`
 `public set ${}(`
 `public async ${}(`
+
+# 输出顺序
+
+```sh
+## ChatClient
+## ChatMessage
+## ChatConversation
+## ChatManager
+## ChatContactManager
+## ChatGroupManager
+## ChatRoomManager
+## ChatPresenceManager
+## ChatPushManager
+## ChatUserInfoManager
+```

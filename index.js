@@ -111,7 +111,7 @@ import readline from 'node:readline';
     }
   };
 
-  const reader = function (df, fd, size) {
+  const reader = function (df, fd, size, onClosed) {
     const rs = fs.createReadStream(df, {
       flags: 'r',
       mode: fs.constants.O_RDONLY,
@@ -141,7 +141,9 @@ import readline from 'node:readline';
     rl.on('error', (...args) => {
       console.error(...args);
     });
-    outputTail(fd);
+    rl.on('close', () => {
+      onClosed();
+    });
   };
 
   const filter = function (dir = '', keys) {
@@ -154,11 +156,23 @@ import readline from 'node:readline';
     return false;
   };
 
-  const scanFiles = function (targetDir, fd) {
+  const finished = function (statics, callback, df, pdir) {
+    ++statics.curCount;
+    // console.log(`c: ${statics.curCount}, ${statics.allCount}, p: ${pdir}`);
+    if (statics.curCount === statics.allCount) {
+      callback();
+    }
+  };
+
+  const scanFiles = function (targetDir, fd, onFinished) {
     fs.readdir(targetDir, function (err, files) {
       if (err) {
         console.error(err);
       } else {
+        const statics = {
+          allCount: files.length,
+          curCount: 0,
+        };
         files.forEach((file) => {
           const df = path.join(targetDir, file);
           fs.stat(df, (err, stats) => {
@@ -168,20 +182,26 @@ import readline from 'node:readline';
               if (stats.isDirectory()) {
                 console.log(`dir: ${df}`);
                 if (filter(df, ['_']) === false) {
-                  scanFiles(df, fd);
+                  scanFiles(df, fd, () => {
+                    finished(statics, onFinished, df, targetDir);
+                  });
                 } else {
                   console.log('ignore:', df);
+                  finished(statics, onFinished, df, targetDir);
                 }
               } else if (stats.isFile()) {
                 console.log(`file: ${df}`);
                 if (filter(df, ['Chat']) === true) {
-                  reader(df, fd, stats.size);
+                  reader(df, fd, stats.size, () => {
+                    finished(statics, onFinished, df, targetDir);
+                  });
                 } else {
                   console.log('ignore:', df);
+                  finished(statics, onFinished, df, targetDir);
                 }
               } else {
                 console.log(`ignore: ${stats}`);
-                a``;
+                finished(statics, onFinished, df, targetDir);
               }
             }
           });
@@ -190,16 +210,62 @@ import readline from 'node:readline';
     });
   };
 
+  const poster = function (outputFile, inputFile) {
+    const list = [
+      '## ChatClient\n',
+      '## ChatConnectEventListener\n',
+      '## ChatMultiDeviceEventListener\n',
+      '## ChatCustomEventListener\n',
+      '## ChatManager\n',
+      '## ChatMessageEventListener\n',
+      '## ChatContactManager\n',
+      '## ChatContactEventListener\n',
+      '## ChatGroupManager\n',
+      '## ChatGroupEventListener\n',
+      '## ChatRoomManager\n',
+      '## ChatRoomEventListener\n',
+      '## ChatPresenceManager\n',
+      '## ChatPresenceEventListener\n',
+      '## ChatPushManager\n',
+      '## ChatUserInfoManager\n',
+      '## ChatMessage\n',
+      '## ChatConversation\n',
+    ];
+    const fd = fs.openSync(
+      outputFile,
+      fs.constants.O_CREAT | fs.constants.O_WRONLY | fs.constants.O_TRUNC
+    );
+    const buffer = fs.readFileSync(inputFile);
+    const content = buffer.toString('utf8', 0, buffer.byteLength);
+    for (let index = 0; index < list.length; index++) {
+      const element = list[index];
+      const start = content.indexOf(element);
+      if (start >= 0) {
+        const end = content.indexOf('## ', start + 1);
+        fs.writeFileSync(
+          fd,
+          content.substring(start, end >= 0 ? end : undefined),
+          { encoding: 'utf8', mode: fs.constants.O_APPEND }
+        );
+      }
+    }
+    fs.closeSync(fd);
+  };
+
   const main = function () {
     const targetDir = '/Users/asterisk/Codes/rn/react-native-chat-sdk/src';
     const outputDir = '/Users/asterisk/Codes/zuoyu/api_docs_parser';
     global.outputFile = path.join(outputDir, 'output.md');
     global.cacheSize = 32;
+    const output2File = path.join(outputDir, 'output2.md');
     init(global.outputFile, (err, fd) => {
       if (err) {
         console.error(err);
       } else {
-        scanFiles(targetDir, fd);
+        scanFiles(targetDir, fd, () => {
+          console.log('');
+          poster(output2File, global.outputFile);
+        });
       }
     });
   };
