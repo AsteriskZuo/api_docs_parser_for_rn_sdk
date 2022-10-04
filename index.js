@@ -58,6 +58,14 @@ import readline from 'node:readline';
     return false;
   };
 
+  const matcherSync = function (input, regex) {
+    const r = regex.exec(input);
+    if (r) {
+      return r[0];
+    }
+    return null;
+  };
+
   const parser = function (line, fd, pd) {
     matcher(line, /\/\*\*/g, (data) => {
       pd.commentLineNumber = pd.lineNumber + 1;
@@ -242,11 +250,15 @@ import readline from 'node:readline';
       const start = content.indexOf(element);
       if (start >= 0) {
         const end = content.indexOf('## ', start + 1);
-        fs.writeFileSync(
-          fd,
-          content.substring(start, end >= 0 ? end : undefined),
-          { encoding: 'utf8', mode: fs.constants.O_APPEND }
-        );
+        let c = content.substring(start, end >= 0 ? end : undefined);
+        const m = matcherSync(c, /##\s([a-z|A-Z|0-9])+EventListener\n/g);
+        if (m) {
+          c = c.replace(m, '\n');
+        }
+        fs.writeFileSync(fd, c, {
+          encoding: 'utf8',
+          mode: fs.constants.O_APPEND,
+        });
       }
     }
     fs.closeSync(fd);
